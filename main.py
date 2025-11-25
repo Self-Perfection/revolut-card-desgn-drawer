@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "pure-python-adb>=0.3.0.dev0",
+#     "numpy>=1.21.0",
+#     "Pillow>=8.0.0",
+# ]
+# ///
+
 from ppadb.client import Client as AdbClient
 import numpy as np
 import time
