@@ -200,7 +200,7 @@ def generate_template(output_path):
     print(f"White areas: drawable, Gray areas: cutoff regions")
 
 
-def draw_image(device, image_path, step=1, min_duration=200, delay_ms=25, debug=False):
+def draw_image(device, image_path, min_duration=200, delay_ms=25, debug=False):
     # Load configuration
     config = load_config()
 
@@ -212,43 +212,46 @@ def draw_image(device, image_path, step=1, min_duration=200, delay_ms=25, debug=
     # Extract swipe data
     swipe_data = extract_continuous_swipes(image_array)
 
-    # Filter swipe data by step if needed
-    if step > 1:
-        # Get unique Y coordinates and sort them
-        unique_y = sorted(set(y for _, _, y in swipe_data))
-        # Select every Nth Y coordinate
-        selected_y = set(unique_y[i] for i in range(0, len(unique_y), step))
-        # Filter swipe data to keep only selected rows
-        swipe_data = [(x1, x2, y) for x1, x2, y in swipe_data if y in selected_y]
-
     # Map image coordinates to screen coordinates using config
     screen_start_x = config['left_x']
     screen_start_y = config['bottom_y']
     scale = config['scale']
 
     total_swipes = len(swipe_data)
-    if step > 1:
-        print(f"Drawing every {step} row(s)")
 
-    # Draw the image using swipe gestures with progress bar
-    skip = 0
+    # Draw the image using swipe gestures with progress bar (progressive order - BFS)
     with tqdm(total=total_swipes, desc="Drawing", unit="swipe") as pbar:
-        for i, (start_x, end_x, y) in enumerate(swipe_data, 1):
-            if i < skip:
-                continue
-            screen_x1 = screen_start_x + start_x * scale
-            screen_x2 = screen_start_x + end_x * scale
-            screen_y = screen_start_y - y * scale  # Subtract y to draw from bottom to top
-            swipe(device, int(screen_x1), int(screen_x2), int(screen_y), config, min_duration, delay_ms, debug)
-            pbar.update(1)
+        jobs = [(0, len(swipe_data) - 1)]  # List of (start_idx, end_idx) ranges
+
+        while jobs:
+            new_jobs = []
+            for start_idx, end_idx in jobs:
+                if start_idx > end_idx:
+                    continue
+
+                # Draw center element
+                mid_idx = (start_idx + end_idx) // 2
+                start_x, end_x, y = swipe_data[mid_idx]
+
+                screen_x1 = screen_start_x + start_x * scale
+                screen_x2 = screen_start_x + end_x * scale
+                screen_y = screen_start_y - y * scale
+
+                swipe(device, int(screen_x1), int(screen_x2), int(screen_y),
+                      config, min_duration, delay_ms, debug)
+                pbar.update(1)
+
+                # Add halves for next level
+                new_jobs.append((start_idx, mid_idx - 1))
+                new_jobs.append((mid_idx + 1, end_idx))
+
+            jobs = new_jobs
 
     print("Drawing completed")
 
 def main():
     parser = argparse.ArgumentParser(description='Draw images on Android device using ADB')
     parser.add_argument('image_path', nargs='?', help='Path to image file')
-    parser.add_argument('--step', type=int, default=1,
-                       help='Draw every Nth row (default: 1 - all rows)')
     parser.add_argument('--min-duration', type=int, default=200,
                        help='Minimum swipe duration in milliseconds (default: 200)')
     parser.add_argument('--delay', type=int, default=25,
@@ -269,7 +272,7 @@ def main():
         parser.error('image_path is required when not generating template')
 
     device = connect_to_device()
-    draw_image(device, args.image_path, step=args.step, min_duration=args.min_duration, delay_ms=args.delay, debug=args.debug)
+    draw_image(device, args.image_path, min_duration=args.min_duration, delay_ms=args.delay, debug=args.debug)
 
 if __name__ == "__main__":
     main()
