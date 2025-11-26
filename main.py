@@ -21,6 +21,7 @@ def extract_continuous_swipes(image_array):
     height, width = image_array.shape
     for y in range(height - 1, -1, -1):  # Start from the bottom row
         row = image_array[y]
+        inverted_y = height - 1 - y
         start = None
         for x in range(width):
             if row[x] == 255:  # White pixel
@@ -28,10 +29,18 @@ def extract_continuous_swipes(image_array):
                     start = x
             else:
                 if start is not None:
-                    swipe_data.append((start, x - 1, height - 1 - y))  # Invert y-coordinate
+                    # Alternate swipe direction: even rows left-to-right, odd rows right-to-left
+                    if inverted_y % 2 == 0:
+                        swipe_data.append((start, x - 1, inverted_y))
+                    else:
+                        swipe_data.append((x - 1, start, inverted_y))  # Swapped direction
                     start = None
         if start is not None:
-            swipe_data.append((start, width - 1, height - 1 - y))  # Invert y-coordinate
+            # Alternate swipe direction: even rows left-to-right, odd rows right-to-left
+            if inverted_y % 2 == 0:
+                swipe_data.append((start, width - 1, inverted_y))
+            else:
+                swipe_data.append((width - 1, start, inverted_y))  # Swapped direction
     return swipe_data
 
 def swipe(device, start_x, end_x, y, config, min_duration=200, delay_ms=25):
