@@ -32,7 +32,7 @@ def extract_continuous_swipes(image_array):
             swipe_data.append((start, width - 1, height - 1 - y))  # Invert y-coordinate
     return swipe_data
 
-def swipe(device, start_x, end_x, y, config):
+def swipe(device, start_x, end_x, y, config, min_duration=200, delay_ms=25):
     # Clip start_x to valid bounds
     start_x = max(start_x, config['left_x'])
     if y < config['cutoff_tl_y']:
@@ -52,12 +52,12 @@ def swipe(device, start_x, end_x, y, config):
         return
 
     # Calculate dynamic duration based on swipe length
-    # Formula: 100ms base + (length / 500) seconds
+    # Formula: min_duration (ms) base + (length / 500) seconds
     swipe_length = end_x - start_x
-    duration = int(100 + (swipe_length / 0.5))
+    duration = int(min_duration + (swipe_length / 0.5))
 
     device.shell(f"input swipe {start_x} {y} {end_x} {y} {duration}")
-    time.sleep(0.01)  # Small delay between swipes
+    time.sleep(delay_ms / 1000.0)  # Delay between swipes
 
 def connect_to_device():
     client = AdbClient(host="127.0.0.1", port=5037)
@@ -182,7 +182,7 @@ def generate_template(output_path):
     print(f"White areas: drawable, Gray areas: cutoff regions")
 
 
-def draw_image(device, image_path, step=1):
+def draw_image(device, image_path, step=1, min_duration=200, delay_ms=25):
     # Load configuration
     config = load_config()
 
@@ -220,7 +220,7 @@ def draw_image(device, image_path, step=1):
         screen_x1 = screen_start_x + start_x * scale
         screen_x2 = screen_start_x + end_x * scale
         screen_y = screen_start_y - y * scale  # Subtract y to draw from bottom to top
-        swipe(device, int(screen_x1), int(screen_x2), int(screen_y), config)
+        swipe(device, int(screen_x1), int(screen_x2), int(screen_y), config, min_duration, delay_ms)
 
         # Log progress
         if i % 10 == 0 or i == total_swipes:
@@ -234,6 +234,10 @@ def main():
     parser.add_argument('image_path', nargs='?', help='Path to image file')
     parser.add_argument('--step', type=int, default=1,
                        help='Draw every Nth row (default: 1 - all rows)')
+    parser.add_argument('--min-duration', type=int, default=200,
+                       help='Minimum swipe duration in milliseconds (default: 200)')
+    parser.add_argument('--delay', type=int, default=25,
+                       help='Delay between swipes in milliseconds (default: 25)')
     parser.add_argument('--generate-template', type=str, metavar='OUTPUT',
                        help='Generate template image and save to OUTPUT file')
     args = parser.parse_args()
@@ -248,7 +252,7 @@ def main():
         parser.error('image_path is required when not generating template')
 
     device = connect_to_device()
-    draw_image(device, args.image_path, step=args.step)
+    draw_image(device, args.image_path, step=args.step, min_duration=args.min_duration, delay_ms=args.delay)
 
 if __name__ == "__main__":
     main()
