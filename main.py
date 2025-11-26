@@ -43,7 +43,10 @@ def extract_continuous_swipes(image_array):
                 swipe_data.append((width - 1, start, inverted_y))  # Swapped direction
     return swipe_data
 
-def swipe(device, start_x, end_x, y, config, min_duration=200, delay_ms=25):
+def swipe(device, start_x, end_x, y, config, min_duration=200, delay_ms=25, debug=False):
+    original_start = start_x
+    original_end = end_x
+
     # Clip start_x to valid bounds
     start_x = max(start_x, config['left_x'])
     if y < config['cutoff_tl_y']:
@@ -66,6 +69,10 @@ def swipe(device, start_x, end_x, y, config, min_duration=200, delay_ms=25):
     # Formula: min_duration (ms) base + (length / 500) seconds
     swipe_length = abs(end_x - start_x)
     duration = int(min_duration + (swipe_length / 0.5))
+
+    if debug:
+        direction = "→" if start_x < end_x else "←"
+        print(f"DEBUG: y={y}, orig=({original_start},{original_end}), final=({start_x},{end_x}) {direction}, len={swipe_length}")
 
     device.shell(f"input swipe {start_x} {y} {end_x} {y} {duration}")
     time.sleep(delay_ms / 1000.0)  # Delay between swipes
@@ -193,7 +200,7 @@ def generate_template(output_path):
     print(f"White areas: drawable, Gray areas: cutoff regions")
 
 
-def draw_image(device, image_path, step=1, min_duration=200, delay_ms=25):
+def draw_image(device, image_path, step=1, min_duration=200, delay_ms=25, debug=False):
     # Load configuration
     config = load_config()
 
@@ -232,7 +239,7 @@ def draw_image(device, image_path, step=1, min_duration=200, delay_ms=25):
             screen_x1 = screen_start_x + start_x * scale
             screen_x2 = screen_start_x + end_x * scale
             screen_y = screen_start_y - y * scale  # Subtract y to draw from bottom to top
-            swipe(device, int(screen_x1), int(screen_x2), int(screen_y), config, min_duration, delay_ms)
+            swipe(device, int(screen_x1), int(screen_x2), int(screen_y), config, min_duration, delay_ms, debug)
             pbar.update(1)
 
     print("Drawing completed")
@@ -246,6 +253,8 @@ def main():
                        help='Minimum swipe duration in milliseconds (default: 200)')
     parser.add_argument('--delay', type=int, default=25,
                        help='Delay between swipes in milliseconds (default: 25)')
+    parser.add_argument('--debug', action='store_true',
+                       help='Enable debug logging for swipe directions')
     parser.add_argument('--generate-template', type=str, metavar='OUTPUT',
                        help='Generate template image and save to OUTPUT file')
     args = parser.parse_args()
@@ -260,7 +269,7 @@ def main():
         parser.error('image_path is required when not generating template')
 
     device = connect_to_device()
-    draw_image(device, args.image_path, step=args.step, min_duration=args.min_duration, delay_ms=args.delay)
+    draw_image(device, args.image_path, step=args.step, min_duration=args.min_duration, delay_ms=args.delay, debug=args.debug)
 
 if __name__ == "__main__":
     main()
