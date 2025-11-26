@@ -54,17 +54,17 @@ def swipe(device, start_x, end_x, y, config, min_duration=200, delay_ms=25):
     if y > config['cutoff_br_y']:
         end_x = min(end_x, config['cutoff_br_x'])
 
-    # Verify both points are valid and swipe makes sense
-    if start_x >= end_x:
+    # Verify both points are valid (support both directions)
+    if start_x == end_x:
         return
     if not is_within_bounds(start_x, y, config):
         return
     if not is_within_bounds(end_x, y, config):
         return
 
-    # Calculate dynamic duration based on swipe length
+    # Calculate dynamic duration based on swipe length (absolute value for both directions)
     # Formula: min_duration (ms) base + (length / 500) seconds
-    swipe_length = end_x - start_x
+    swipe_length = abs(end_x - start_x)
     duration = int(min_duration + (swipe_length / 0.5))
 
     device.shell(f"input swipe {start_x} {y} {end_x} {y} {duration}")
