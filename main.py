@@ -4,6 +4,7 @@
 #     "pure-python-adb>=0.3.0.dev0",
 #     "numpy>=1.21.0",
 #     "Pillow>=8.0.0",
+#     "tqdm>=4.65.0",
 # ]
 # ///
 
@@ -13,6 +14,7 @@ import time
 from PIL import Image
 import sys
 import argparse
+from tqdm import tqdm
 
 def extract_continuous_swipes(image_array):
     swipe_data = []
@@ -211,21 +213,18 @@ def draw_image(device, image_path, step=1, min_duration=200, delay_ms=25):
     total_swipes = len(swipe_data)
     if step > 1:
         print(f"Drawing every {step} row(s)")
-    print(f"Total swipes to perform: {total_swipes}")
-    skip = 0
-    # Draw the image using swipe gestures
-    for i, (start_x, end_x, y) in enumerate(swipe_data, 1):
-        if i < skip:
-            continue
-        screen_x1 = screen_start_x + start_x * scale
-        screen_x2 = screen_start_x + end_x * scale
-        screen_y = screen_start_y - y * scale  # Subtract y to draw from bottom to top
-        swipe(device, int(screen_x1), int(screen_x2), int(screen_y), config, min_duration, delay_ms)
 
-        # Log progress
-        if i % 10 == 0 or i == total_swipes:
-            progress = (i / total_swipes) * 100
-            print(f"Progress: {progress:.2f}% ({i}/{total_swipes} swipes)")
+    # Draw the image using swipe gestures with progress bar
+    skip = 0
+    with tqdm(total=total_swipes, desc="Drawing", unit="swipe") as pbar:
+        for i, (start_x, end_x, y) in enumerate(swipe_data, 1):
+            if i < skip:
+                continue
+            screen_x1 = screen_start_x + start_x * scale
+            screen_x2 = screen_start_x + end_x * scale
+            screen_y = screen_start_y - y * scale  # Subtract y to draw from bottom to top
+            swipe(device, int(screen_x1), int(screen_x2), int(screen_y), config, min_duration, delay_ms)
+            pbar.update(1)
 
     print("Drawing completed")
 
