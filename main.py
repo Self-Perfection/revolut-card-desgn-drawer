@@ -33,8 +33,6 @@ def extract_continuous_swipes(image_array):
     return swipe_data
 
 def swipe(device, start_x, end_x, y, config):
-    duration = 1000
-
     # Clip start_x to valid bounds
     start_x = max(start_x, config['left_x'])
     if y < config['cutoff_tl_y']:
@@ -52,6 +50,11 @@ def swipe(device, start_x, end_x, y, config):
         return
     if not is_within_bounds(end_x, y, config):
         return
+
+    # Calculate dynamic duration based on swipe length
+    # Formula: 100ms base + (length / 500) seconds
+    swipe_length = end_x - start_x
+    duration = int(100 + (swipe_length / 0.5))
 
     device.shell(f"input swipe {start_x} {y} {end_x} {y} {duration}")
     time.sleep(0.01)  # Small delay between swipes
