@@ -139,6 +139,46 @@ def is_within_bounds(x, y, config):
     return True
 
 
+def generate_template(output_path):
+    """Generate template image showing drawable area with cutoff regions marked"""
+    config = load_config()
+
+    # Calculate template dimensions
+    screen_width = config['right_x'] - config['left_x']
+    screen_height = config['bottom_y'] - config['top_y']
+    scale = config['scale']
+
+    width = int(screen_width / scale)
+    height = int(screen_height / scale)
+
+    # Create white image (drawable area)
+    image = Image.new('L', (width, height), 255)
+    pixels = image.load()
+
+    # Mark top-left cutoff region (in template coordinates)
+    tl_x = int((config['cutoff_tl_x'] - config['left_x']) / scale)
+    tl_y = int((config['cutoff_tl_y'] - config['top_y']) / scale)
+
+    for y in range(min(tl_y, height)):
+        for x in range(min(tl_x, width)):
+            pixels[x, y] = 128  # Gray for cutoff
+
+    # Mark bottom-right cutoff region
+    br_x = int((config['cutoff_br_x'] - config['left_x']) / scale)
+    br_y = int((config['cutoff_br_y'] - config['top_y']) / scale)
+
+    for y in range(max(0, br_y), height):
+        for x in range(max(0, br_x), width):
+            pixels[x, y] = 128  # Gray for cutoff
+
+    # Save template
+    image.save(output_path)
+    print(f"Template saved to {output_path}")
+    print(f"Dimensions: {width}x{height} pixels")
+    print(f"Scale: {scale} (1 template pixel = {1/scale:.2f} screen pixels)")
+    print(f"White areas: drawable, Gray areas: cutoff regions")
+
+
 def draw_image(device, image_path, step=1):
     # Load configuration
     config = load_config()
@@ -188,10 +228,21 @@ def draw_image(device, image_path, step=1):
 
 def main():
     parser = argparse.ArgumentParser(description='Draw images on Android device using ADB')
-    parser.add_argument('image_path', help='Path to image file')
+    parser.add_argument('image_path', nargs='?', help='Path to image file')
     parser.add_argument('--step', type=int, default=1,
                        help='Draw every Nth row (default: 1 - all rows)')
+    parser.add_argument('--generate-template', type=str, metavar='OUTPUT',
+                       help='Generate template image and save to OUTPUT file')
     args = parser.parse_args()
+
+    # Generate template mode
+    if args.generate_template:
+        generate_template(args.generate_template)
+        return
+
+    # Normal drawing mode
+    if not args.image_path:
+        parser.error('image_path is required when not generating template')
 
     device = connect_to_device()
     draw_image(device, args.image_path, step=args.step)
