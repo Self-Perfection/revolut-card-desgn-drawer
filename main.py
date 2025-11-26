@@ -35,14 +35,23 @@ def extract_continuous_swipes(image_array):
 def swipe(device, start_x, end_x, y, config):
     duration = 1000
 
-    # Check if start point is within bounds
+    # Clip start_x to valid bounds
+    start_x = max(start_x, config['left_x'])
+    if y < config['cutoff_tl_y']:
+        start_x = max(start_x, config['cutoff_tl_x'])
+
+    # Clip end_x to valid bounds
+    end_x = min(end_x, config['right_x'])
+    if y > config['cutoff_br_y']:
+        end_x = min(end_x, config['cutoff_br_x'])
+
+    # Verify both points are valid and swipe makes sense
+    if start_x >= end_x:
+        return
     if not is_within_bounds(start_x, y, config):
         return
-
-    # Check if end point is within bounds, clip if needed
     if not is_within_bounds(end_x, y, config):
-        # Clip to right boundary
-        end_x = min(end_x, config['right_x'])
+        return
 
     device.shell(f"input swipe {start_x} {y} {end_x} {y} {duration}")
     time.sleep(0.01)  # Small delay between swipes
