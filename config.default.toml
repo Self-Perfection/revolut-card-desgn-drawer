@@ -1,0 +1,23 @@
+# Default drawing area configuration
+# These values will be used if config.toml doesn't exist
+# Run calibrate.py to create config.toml with correct values for your device
+
+# Main rectangle bounds (old hardcoded values)
+[bounds]
+left_x = 180
+right_x = 940
+top_y = 680
+bottom_y = 1280
+
+# Cutoff regions (excluded corners)
+# These represent the old hardcoded boundary checks
+[cutoff_top_left]
+x = 300
+y = 800
+
+[cutoff_bottom_right]
+x = 610
+y = 1100
+
+[settings]
+scale = 0.4
