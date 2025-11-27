@@ -16,6 +16,10 @@ import sys
 import argparse
 from tqdm import tqdm
 
+# Default configuration constants
+DEFAULT_MIN_DURATION = 200  # milliseconds
+DEFAULT_DELAY_MS = 25       # milliseconds
+
 def extract_continuous_swipes(image_array):
     swipe_data = []
     height, width = image_array.shape
@@ -43,7 +47,7 @@ def extract_continuous_swipes(image_array):
                 swipe_data.append((width - 1, start, inverted_y))  # Swapped direction
     return swipe_data
 
-def swipe(device, start_x, end_x, y, config, min_duration=200, delay_ms=25, debug=False):
+def swipe(device, start_x, end_x, y, config, min_duration=DEFAULT_MIN_DURATION, delay_ms=DEFAULT_DELAY_MS, debug=False):
     original_start = start_x
     original_end = end_x
 
@@ -200,7 +204,7 @@ def generate_template(output_path):
     print(f"White areas: drawable, Gray areas: cutoff regions")
 
 
-def draw_image(device, image_path, min_duration=200, delay_ms=25, debug=False):
+def draw_image(device, image_path, min_duration=DEFAULT_MIN_DURATION, delay_ms=DEFAULT_DELAY_MS, debug=False):
     # Load configuration
     config = load_config()
 
@@ -252,9 +256,9 @@ def draw_image(device, image_path, min_duration=200, delay_ms=25, debug=False):
 def main():
     parser = argparse.ArgumentParser(description='Draw images on Android device using ADB')
     parser.add_argument('image_path', nargs='?', help='Path to image file')
-    parser.add_argument('--min-duration', type=int, default=200,
+    parser.add_argument('--min-duration', type=int, default=DEFAULT_MIN_DURATION,
                        help='Minimum swipe duration in milliseconds (default: 200)')
-    parser.add_argument('--delay', type=int, default=25,
+    parser.add_argument('--delay', type=int, default=DEFAULT_DELAY_MS,
                        help='Delay between swipes in milliseconds (default: 25)')
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug logging for swipe directions')
