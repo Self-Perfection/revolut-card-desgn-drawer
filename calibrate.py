@@ -1,16 +1,16 @@
 # /// script
-# requires-python = ">=3.8"
+# requires-python = ">=3.11"
 # dependencies = [
 #     "pure-python-adb>=0.3.0.dev0",
 # ]
 # ///
 
-from ppadb.client import Client as AdbClient
 import sys
 import time
 import re
 import tty
 import termios
+from config import load_config, connect_to_device
 
 
 def getch():
@@ -23,56 +23,6 @@ def getch():
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
-
-
-def connect_to_device():
-    client = AdbClient(host="127.0.0.1", port=5037)
-    devices = client.devices()
-
-    if len(devices) == 0:
-        print("No devices connected")
-        sys.exit(1)
-
-    device = devices[0]
-    print(f"Connected to {device.serial}")
-    return device
-
-
-def load_defaults():
-    """Load default configuration from config.default.toml"""
-    import os
-    if not os.path.exists('config.default.toml'):
-        print("Error: config.default.toml not found!")
-        sys.exit(1)
-
-    config = {}
-    with open('config.default.toml', 'r') as f:
-        section = None
-        for line in f:
-            line = line.strip()
-            if line.startswith('['):
-                section = line[1:-1]
-            elif '=' in line and not line.startswith('#'):
-                key, value = line.split('=', 1)
-                key = key.strip()
-                value = value.strip()
-                # Try to parse as number
-                try:
-                    if '.' in value:
-                        value = float(value)
-                    else:
-                        value = int(value)
-                except:
-                    pass
-                if section == 'bounds':
-                    config[key] = value
-                elif section == 'cutoff_top_left':
-                    config[f'cutoff_tl_{key}'] = value
-                elif section == 'cutoff_bottom_right':
-                    config[f'cutoff_br_{key}'] = value
-                elif section == 'settings' and key == 'scale':
-                    config['scale'] = value
-    return config
 
 
 def draw_vertical_line(device, x, y_start, y_end):
@@ -203,7 +153,7 @@ def main():
     print("Options: y=inside, n=outside, r=repeat, s=start over\n")
 
     # Load defaults for drawing test lines
-    defaults = load_defaults()
+    defaults = load_config()
     print(f"Loaded defaults from config.default.toml")
     print(f"  Drawing area: [{defaults['left_x']}, {defaults['right_x']}] x [{defaults['top_y']}, {defaults['bottom_y']}]\n")
 
