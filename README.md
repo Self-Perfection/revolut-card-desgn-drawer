@@ -150,20 +150,6 @@ uv run main.py your_design.png
 python main.py your_design.png
 ```
 
-### Faster Drawing (Lower Resolution)
-
-Draw every Nth row for faster rendering:
-
-```bash
-# Draw every 2nd row (50% faster, slightly lower quality)
-uv run main.py your_design.png --step 2
-# or: python main.py your_design.png --step 2
-
-# Draw every 3rd row (66% faster, lower quality)
-uv run main.py your_design.png --step 3
-# or: python main.py your_design.png --step 3
-```
-
 ### Image Preparation Tips
 
 - **Format**: Any common format (PNG, JPG, etc.)
@@ -196,11 +182,8 @@ uv run main.py your_design.png --step 3
 # Generate a new template after configuration changes
 uv run main.py --generate-template my_template.png
 
-# Draw a design with full resolution
+# Draw a design
 uv run main.py cross.png
-
-# Draw a design quickly with lower resolution
-uv run main.py my_logo.png --step 2
 ```
 
 ## How It Works
@@ -229,7 +212,7 @@ Each row of black pixels becomes a series of horizontal swipe gestures that repl
 **Drawing is incomplete:**
 - Verify your design fits within the template bounds (white area)
 - Check that cutoff regions are configured correctly
-- Try reducing `--step` value for more complete rendering
+- The tool uses progressive drawing (BFS) to ensure the image structure is drawn first
 
 ## License
 
